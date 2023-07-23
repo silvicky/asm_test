@@ -1,12 +1,10 @@
 bits 16
 org 0600h
 jmp start
-options db "1-7",0dh,0ah
+options db "1-4GSR",0dh,0ah
 errdisk db "diskerr",0dh,0ah
-;5=gap 6=shutdown 7=reboot
-bootdrv resb 1
-bootentry resb 1
-dap resb 16
+bootdrv db 0
+dap dd 00010010h,0,0,0
 start:
 cli
 xor ax,ax
@@ -24,23 +22,28 @@ sti
 mov [bootdrv],dl
 mov ax,3
 int 10h
+.before_menu:
+call menu
+jmp .before_menu
 menu:
-mov cx,0005h
+mov ah,3
+mov bh,0
+int 10h
+mov cx,0008h
 mov bp,options
 mov ax,1301h
-mov bx,000fh
-mov dx,0
+mov bl,0fh
 int 10h
 mov ax,0
 int 16h
 sub al,"0"
 cmp al,4
 jle partition
-cmp al,5
+cmp al,37h
 je gap
-cmp al,6
+cmp al,43h
 je shutdown
-cmp al,7
+cmp al,42h
 je reboot
 jmp menu
 
@@ -48,12 +51,15 @@ shutdown:
 mov ax,5301h
 xor bx,bx
 int 15h
-mov al,0eh
+mov ax,530eh
 mov cx,0101h
 int 15h
-mov al,07h
-mov bx,1
-mov cx,3
+mov ax,5308h
+mov bl,1
+xor ch,ch
+int 15h
+mov ax,5307h
+mov cl,3
 int 15h
 ret
 
@@ -62,10 +68,8 @@ jmp 0xffff:0
 ret
 
 gap:
-mov dword [dap],00010010h
 mov dword [dap+4],00007c00h
 mov dword [dap+8],1
-mov dword [dap+12],0
 mov si,dap
 mov ax,4201h
 mov dl,[bootdrv]
@@ -73,11 +77,21 @@ int 13h
 jmp 7c00h
 ret
 
+disk_err:
+mov ah,3
+mov bh,0
+int 10h
+mov cx,0009h
+mov bp,errdisk
+mov ax,1301h
+mov bx,000ch
+int 10h
+ret
+
 times 218-($-$$) db 0
 times 6 db 0
 
 partition:
-mov [bootentry],al
 ;activate what we are booting
 and byte [07beh],7fh
 and byte [07ceh],7fh
@@ -90,10 +104,8 @@ or byte [bx],80h
 ;write new mbr
 mov dl,[bootdrv]
 mov ax,4301h
-mov dword [dap],00010010h
 mov dword [dap+4],00000600h
 mov dword [dap+8],0
-mov dword [dap+12],0
 mov si,dap
 int 13h
 jc disk_err
@@ -109,15 +121,6 @@ int 13h
 jc disk_err
 mov si,bx
 jmp 7c00h
-ret
-
-disk_err:
-mov cx,0009h
-mov bp,errdisk
-mov ax,1301h
-mov bx,000ch
-mov dx,0
-int 10h
 ret
 
 times 440-($-$$) db 0

@@ -22,12 +22,12 @@ jmp 0:begin
 begin:
 sti 
 mov [bootdrv],dl
-menu:
 mov ax,3
 int 10h
+menu:
 mov cx,0005h
 mov bp,options
-mov ax,1300h
+mov ax,1301h
 mov bx,000fh
 mov dx,0
 int 10h
@@ -114,8 +114,8 @@ ret
 disk_err:
 mov cx,0009h
 mov bp,errdisk
-mov ax,1300h
-mov bx,000fh
+mov ax,1301h
+mov bx,000ch
 mov dx,0
 int 10h
 ret

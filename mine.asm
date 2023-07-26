@@ -9,11 +9,11 @@ mov ds,ax
 ;generate random seed
 int 1ah
 or dx,1
-mov word [8000h],dx
+mov word [8100h],dx
 mov ax,3
 int 10h
 mov bx,10h
-mov ax,[8000h]
+mov ax,[8100h]
 row:
 cmp bx,0a0h
 jg row_end
@@ -23,7 +23,7 @@ cmp si,10
 jg col_end
 ;generate random
 not ax
-imul word [8000h]
+imul word [8100h]
 xor ax,41267
 mov [bx+si+7e00h],ah
 shl byte [bx+si+7e00h],1
@@ -37,6 +37,7 @@ mov byte [bx+si+7e00h],1
 dec byte [cnt]
 inc byte [cnt+1]
 aaa2:
+mov byte [bx+si+8000h],0
 inc si
 jmp col
 col_end:
@@ -114,6 +115,9 @@ add cl,dl
 xor ch,ch
 mov si,cx
 add si,7f00h
+cmp byte [si+100h],0
+jnz input
+mov byte [si+100h],1
 mov ax,1300h
 mov bx,0002h
 mov cx,1
@@ -128,13 +132,30 @@ cmp byte [cnt],0
 je victory
 jmp input
 mark:
-sub dl,65
-mov ax,1300h
-mov bx,0004h
-mov cx,1
-mov bp,mark_char
+sub dl,64
+mov cl,dh
+shl cl,4
+add cl,dl
+xor ch,ch
+mov si,cx
+cmp byte [si+8000h],1
+je input
 dec dh
+dec dl
+mov cx,1
+mov ax,1300h
+cmp byte [si+8000h],2
+je demark
+mov bx,0004h
+mov bp,mark_char
 int 10h
+mov byte [si+8000h],2
+jmp input
+demark:
+mov bx,0007h
+mov bp,question
+int 10h
+mov byte [si+8000h],0
 jmp input
 
 fail:
@@ -166,8 +187,10 @@ jmp mine_init
 
 cnt db 100,0
 mark_char db "X"
+question db "?"
 fail_msg db "BOOM!",13,10
 victory_msg db "VICTORY!",13,10
-times 440-($-$$) db 0
-times 70 db 0
+;times 440-($-$$) db 0
+;times 70 db 0
+times 510-($-$$) db 0
 db 0x55,0xaa

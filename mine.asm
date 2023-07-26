@@ -17,7 +17,7 @@ mov ax,[8100h]
 row:
 cmp bx,0a0h
 jg row_end
-mov si,2
+mov si,1
 col:
 cmp si,10
 jg col_end
@@ -36,6 +36,7 @@ aaa:
 mov byte [bx+si+7e00h],1
 dec byte [cnt]
 inc byte [cnt+1]
+inc byte [cnt+2]
 aaa2:
 mov byte [bx+si+8000h],0
 inc si
@@ -150,46 +151,65 @@ mov bx,0004h
 mov bp,mark_char
 int 10h
 mov byte [si+8000h],2
-jmp input
+cmp byte [si+7e00h],1
+jnz end_mark
+dec byte [cnt+1]
+end_mark:
+dec byte [cnt+2]
+jmp mark_changed
 demark:
 mov bx,0007h
 mov bp,question
 int 10h
 mov byte [si+8000h],0
-jmp input
+cmp byte [si+7e00h],1
+jnz end_demark
+inc byte [cnt+1]
+end_demark:
+inc byte [cnt+2]
+jmp mark_changed
+mark_changed:
+mov si,cnt+2
+mov di,tmpnum
+movsb
+add byte [tmpnum],48
+print_mine:
+mov ax,1300h
+mov bx,000dh
+mov cx,1
+mov dx,000bh
+mov bp,tmpnum
+int 10h
+cmp word [cnt+1],0
+jnz input
+jmp victory
 
 fail:
-mov ah,3
-mov bh,0
-int 10h
-mov cx,0007h
 mov bp,fail_msg
-mov ax,1301h
-mov bx,000ch
-int 10h
 jmp postpre
 
 victory:
-mov ah,3
-mov bh,0
-int 10h
-mov cx,000ah
 mov bp,victory_msg
-mov ax,1301h
-mov bx,000eh
-int 10h
 jmp postpre
 
 postpre:
+mov ah,3
+mov bh,0
+int 10h
+mov ax,1301h
+mov bx,000ch
+mov cx,7
+int 10h
 mov ax,0
 int 16h
 jmp mine_init
 
-cnt db 100,0
+cnt db 100,0,0
 mark_char db "X"
 question db "?"
+tmpnum db ""
 fail_msg db "BOOM!",13,10
-victory_msg db "VICTORY!",13,10
+victory_msg db "WIN!!",13,10
 ;times 440-($-$$) db 0
 ;times 70 db 0
 times 510-($-$$) db 0

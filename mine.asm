@@ -3,9 +3,9 @@ org 7c00h
 mine_init:
 xor ax,ax
 mov es,ax
-mov ss,ax
-mov sp,ax
 mov ds,ax
+mov word [8103h],0
+mov byte [8102h],100
 ;generate random seed
 int 1ah
 or dx,1
@@ -28,15 +28,15 @@ xor ax,41267
 mov [bx+si+7e00h],ah
 shl byte [bx+si+7e00h],1
 shr byte [bx+si+7e00h],4
-cmp byte [bx+si+7e00h],3
+cmp byte [bx+si+7e00h],2
 jle aaa
 mov byte [bx+si+7e00h],0
 jmp aaa2
 aaa:
 mov byte [bx+si+7e00h],1
-dec byte [cnt]
-inc byte [cnt+1]
-inc byte [cnt+2]
+dec byte [8102h]
+inc byte [8103h]
+inc byte [8104h]
 aaa2:
 mov byte [bx+si+8000h],0
 inc si
@@ -100,11 +100,11 @@ jmp row3
 row3_end:
 
 input:
-mov ax,0
+xor ax,ax
 int 16h
 mov dh,al
 sub dh,47
-mov ax,0
+xor ax,ax
 int 16h
 mov dl,al
 cmp al,'a'
@@ -128,8 +128,8 @@ dec dl
 int 10h
 cmp byte [si],'*'
 je fail
-dec byte [cnt]
-cmp byte [cnt],0
+dec byte [8102h]
+cmp byte [8102h],0
 je victory
 jmp input
 mark:
@@ -153,9 +153,9 @@ int 10h
 mov byte [si+8000h],2
 cmp byte [si+7e00h],1
 jnz end_mark
-dec byte [cnt+1]
+dec byte [8103h]
 end_mark:
-dec byte [cnt+2]
+dec byte [8104h]
 jmp mark_changed
 demark:
 mov bx,0007h
@@ -164,12 +164,12 @@ int 10h
 mov byte [si+8000h],0
 cmp byte [si+7e00h],1
 jnz end_demark
-inc byte [cnt+1]
+inc byte [8103h]
 end_demark:
-inc byte [cnt+2]
+inc byte [8104h]
 jmp mark_changed
 mark_changed:
-mov si,cnt+2
+mov si,8104h
 mov di,tmpnum
 movsb
 add byte [tmpnum],48
@@ -180,7 +180,7 @@ mov cx,1
 mov dx,000bh
 mov bp,tmpnum
 int 10h
-cmp word [cnt+1],0
+cmp word [8103h],0
 jnz input
 jmp victory
 
@@ -197,20 +197,17 @@ mov ah,3
 mov bh,0
 int 10h
 mov ax,1301h
-mov bx,000ch
+mov bl,0ch
 mov cx,7
 int 10h
 mov ax,0
 int 16h
 jmp mine_init
 
-cnt db 100,0,0
 mark_char db "X"
 question db "?"
-tmpnum db ""
+tmpnum db " "
 fail_msg db "BOOM!",13,10
 victory_msg db "WIN!!",13,10
-;times 440-($-$$) db 0
-;times 70 db 0
 times 510-($-$$) db 0
 db 0x55,0xaa
